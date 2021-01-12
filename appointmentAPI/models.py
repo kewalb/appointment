@@ -63,6 +63,7 @@ class Doctor(models.Model):
 
 
 class Appointment(models.Model):
+    '''model for appointments'''
     patient_name = models.ForeignKey('UserProfile', on_delete=models.CASCADE)
     doctor_name = models.ForeignKey('Doctor', on_delete=models.CASCADE)
     speciality = models.CharField(max_length=50)
