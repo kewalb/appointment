@@ -72,8 +72,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
        
         
 
-    def create(self, validated_data):
-        '''create a new appointment'''
+    '''def create(self, validated_data):
+        """create a new appointment"""
         #password = pbkdf2_sha256.encrypt(validated_data['password'], rounds=12000, salt_size=32)
         u = UserProfile.objects.get(pk = validated_data['patient_name'])
         d = Doctor.objects.get(pk = validated_data['doctor_name'])
@@ -83,7 +83,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
         st = validated_data['start_time'].split(':')
         et = validated_data['end_time'].split(':')
         print(st, et)
-        res1 = self.check_for_doc(doc_name, pa_name)
+        res1 = self.check_for_doc(doc_name, pa_name, dt)
         res2 = self.check_date(dt)
         res3 = self.time_in_range(datetime.time(int(st[0]), int(st[1]), 00))
         res4 = self.time_in_range(datetime.time(int(et[0]), int(et[1]), 00))
@@ -107,7 +107,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             else:
                 return('select a proper date')
             
-       
+       '''
         
         
 
@@ -116,10 +116,11 @@ class AppointmentSerializer(serializers.ModelSerializer):
         a = Appointment.objects.filter(pk=pk).update(**validated_data)
         return a
 
-    def check_for_doc(self,doc_name, pa_name):
+    def check_for_doc(self,doc_name, pa_name, dt):
         '''check if the doctor appoint exist already for a paticular patient or not'''
         try:
             if Appointment.objects.filter(patient_name = pa_name, doctor_name = doc_name).exists():
+
                 return True
             else:
                 return False

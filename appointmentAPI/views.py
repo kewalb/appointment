@@ -1,4 +1,5 @@
 from django.shortcuts import render
+import datetime
 
 # Create your views here.
 from django.shortcuts import render
@@ -20,62 +21,7 @@ class DoctorApiView(viewsets.ModelViewSet):
     #authentication_classes = [SessionAuthentication, BasicAuthentication]
     #permission_classes = [IsAuthenticated]
 
-    def list(self, request):
-        '''return list of all doctors available'''
-        d = Doctor.objects.all()
-        serializer = self.serializer_class(d, many=True)
-        return Response(serializer.data)
-
-    def retrive(self,request, pk=None):
-        '''retrive a particular doctor based on id'''
-        doc = get_object_or_404(self.queryset, pk=pk)
-        serializer = self.serializer_class(doc, many=True)
-        return Response(serializer.data)
-        
-
-    def create(self, request):
-        '''create a new registration for new Doctor'''
-        serializer = self.serializer_class(data = request.data)
-        if serializer.is_valid():
-            serializer.create(validated_data = request.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def update(self, request, pk=None):
-        '''update a complete record of doctor or to create a new one from existing'''
-        doc = Doctor.objects.get(pk = pk)
-        serializer = self.serializer_class(doc, data=request.data)
-        if serializer.is_valid():
-            serializer.create(validated_data = request.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        
-    def partial_update(self, request, pk=None):
-        '''to make changes to an existing record'''
-        doc = Doctor.objects.get(pk = pk)
-        serializer = self.serializer_class(doc, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.update_doc(validated_data = request.data, pk = pk)
-            return Response(status=status.HTTP_202_ACCEPTED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, pk=None):
-        '''to remove a particular record of doctor based on id'''
-        try:
-            doc = get_object_or_404(self.queryset, pk = pk)
-        except Doctor.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        if request.method == 'DELETE':
-            op = doc.delete()
-            if op:
-                return Response('Deleted successfully')
-            else:
-                return Response('Delete failed')    
-
-            self.delete(doc)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
+  
 
 
 class PatientApiView(viewsets.ModelViewSet):
@@ -84,80 +30,45 @@ class PatientApiView(viewsets.ModelViewSet):
     #authentication_classes = [TokenAuthentication, SessionAuthentication, BasicAuthentication]
     #permission_classes = [IsAuthenticated]
 
-    def create(self, request):
-        '''create a new registration for new Doctor'''
-        serializer = self.serializer_class(data = request.data)
-        if serializer.is_valid():
-            serializer.create(validated_data = request.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def update(self, request, pk=None):
-        '''update a complete record of doctor or to create a new one from existing'''
-        doc = UserProfile.objects.get(pk = pk)
-        serializer = self.serializer_class(doc, data=request.data)
-        if serializer.is_valid():
-            serializer.create(validated_data = request.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        
-    def partial_update(self, request, pk=None):
-        '''to make changes to an existing record'''
-        doc = UserProfile.objects.get(pk = pk)
-        serializer = self.serializer_class(doc, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.update_p(validated_data = request.data, pk = pk)
-            return Response(status=status.HTTP_202_ACCEPTED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, pk=None):
-        '''to remove a particular record of doctor based on id'''
-        try:
-            p = get_object_or_404(self.queryset, pk = pk)
-        except Doctor.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        if request.method == 'DELETE':
-            op = p.delete()
-            if op:
-                return Response('Deleted successfully')
-            else:
-                return Response('Delete failed')    
-
-            self.delete(p)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    
 
 
 
 class AppointmentApiView(viewsets.ModelViewSet):
     serializer_class = AppointmentSerializer
     queryset = Appointment.objects.all()
-    authentication_classes = [TokenAuthentication, SessionAuthentication, BasicAuthentication]
-    permission_classes = [IsAuthenticated]
-
     
-    def list(self, request):
-        '''return list of all doctors available'''
-        a = Appointment.objects.all()
-        serializer = self.serializer_class(a, many=True)
-        print(serializer.data)
-        return Response(serializer.data)
-
     def create(self, request):
-        '''create a new registration for new Doctor'''
-        serializer = self.serializer_class(data = request.data)
-        if serializer.is_valid():
-            serializer.create(validated_data = request.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if request.method == 'POST':
+            s = self.serializer_class(data=request.data)
+            if s.is_valid():
+                d_name = request.data['doctor_name']
+                p_name = request.data['patient_name']
+                d = request.data['date']
+                print(s.data)
+                print(p_name)
+                print(d_name)
+                try:
+                #if(datetime.datetime(int(d[0]),int(d[1]),int(d[2])).date() == datetime.datetime.now().date()):
+                    if Appointment.objects.filter(patient_name = p_name, doctor_name = d_name, date=d).exists():
+                        return Response('cannot appoint with same doctor on same day')
+                    else:
+                        d = Doctor.objects.get(pk = request.data['doctor_name'])
+                        p = UserProfile.objects.get(pk = request.data['patient_name'])
+                        a = Appointment(patient_name = p,
+                            doctor_name = d,
+                            speciality = d.speciality,
+                            date = request.data['date'],
+                            start_time = request.data['start_time'],
+                            end_time = request.data['end_time'],
+                            )
+                        a.save()
+                        return Response(s.data, status=status.HTTP_201_CREATED)
+                except Appointment.DoesNotExist:
+                    return Response('create a new appointment')
+            else:
+                return Response(s.errors)
 
-    def retrive(self, request, pk=None):
-        '''retrive a particular doctor based on id'''
-        app = get_object_or_404(self.queryset, pk=pk)
-        serializer = self.serializer_class(app, many=True)
-        return Response(serializer.data)
+
     
-
-class UserLoginApiView(ObtainAuthToken):
-    '''Handle user authentication Tokens'''
-    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+    
